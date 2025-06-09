@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,9 +8,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { toast } from "@/components/ui/use-toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import { db, auth } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
 
 const signUpSchema = z.object({
   fullName: z.string().min(2, { message: "Full name must be at least 2 characters." }),
@@ -46,13 +44,13 @@ const SignUpPage = () => {
         email: data.email,
         countryCode: data.countryCode,
         phoneNumber: data.phoneNumber,
-        fullPhoneNumber: fullPhoneNumber, // Store combined number
+        fullPhoneNumber: fullPhoneNumber,
         createdAt: serverTimestamp(),
         source: "sign_up_page",
       });
       console.log("User added to 'users' collection with ID: ", userDocRef.id);
 
-      // Add to 'waitlist' collection as well
+      // Add to 'waitlist' collection
       const waitlistDocRef = await addDoc(collection(db, "waitlist"), {
         name: data.fullName,
         email: data.email,
@@ -60,37 +58,17 @@ const SignUpPage = () => {
         phoneNumber: data.phoneNumber,
         fullPhoneNumber: fullPhoneNumber,
         timestamp: serverTimestamp(),
-        status: "registered_signup_page", // Differentiate source
+        status: "registered_signup_page",
         source: "sign_up_page"
       });
       console.log("User added to 'waitlist' collection with ID: ", waitlistDocRef.id);
-      
-      // Create authentication user
-      try {
-        // Use a temporary password based on timestamp; user will likely reset this later
-        const userCredential = await createUserWithEmailAndPassword(auth, data.email, `temp_${Date.now()}`);
-        console.log("Firebase auth user created: ", userCredential.user.uid);
-        toast({
-          title: "Sign Up Successful!",
-          description: "Thank you for creating an account. You've been added to our waitlist.",
-        });
-      } catch (authError: any) {
-        console.error("Firebase auth user creation error: ", authError);
-        if (authError.code === 'auth/email-already-in-use') {
-          toast({
-            title: "Account Exists or Pending",
-            description: "This email is already registered or on our waitlist. We'll be in touch!",
-            variant: "default", 
-          });
-        } else {
-          toast({
-            title: "Authentication Issue",
-            description: `Could not set up auth: ${authError.message}. You are on the waitlist.`,
-            variant: "destructive",
-          });
-        }
-      }
-      
+
+      // Success toast only (no auth)
+      toast({
+        title: "Sign Up Successful!",
+        description: "Thank you! You've been added to the waitlist.",
+      });
+
       form.reset();
     } catch (error: any) {
       console.error("Sign up page - Firestore error:", error);
@@ -170,7 +148,7 @@ const SignUpPage = () => {
               </Button>
             </form>
           </Form>
-           <p className="text-xs text-gray-500 dark:text-gray-400 mt-6 text-center">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-6 text-center">
             By signing up, you agree to our Terms of Service and Privacy Policy.
           </p>
         </div>
@@ -181,4 +159,3 @@ const SignUpPage = () => {
 };
 
 export default SignUpPage;
-
